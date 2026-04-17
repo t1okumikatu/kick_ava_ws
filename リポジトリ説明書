@@ -1,0 +1,43 @@
+リポジトリ説明書
+ava_ws (ROS 2 ワークスペース)
+
+このリポジトリは ROS 2 (Humble) の開発ワークスペースです。
+
+プロジェクト構成
+
+src/: ROS 2 パッケージのソースコード
+
+requirements.txt: Python 仮想環境に必要なライブラリリスト
+
+.gitignore: ビルド生成物や仮想環境をアップロードから除外する設定
+
+セットアップ方法 (別の環境で再現する場合)
+
+1. リポジトリのクローン
+
+git clone <あなたのリポジトリURL>
+cd ava_ws
+
+
+2. 仮想環境の作成とライブラリの復元
+
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+
+3. ビルド
+
+colcon build
+source install/setup.bash
+
+
+日常の Git 操作
+
+コードを変更して GitHub に反映させたい時は、VS Code の「ソース管理」パネルから以下の 3 ステップで行います。
+
+ステージ (+) : 変更したファイルを確定させる
+
+コミット (チェックマーク) : 変更内容に名前（メッセージ）をつけて保存する
+
+プッシュ (同期) : GitHub に送信する
