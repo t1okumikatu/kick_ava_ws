@@ -1,0 +1,4 @@
+streams:
+  robot_cam:
+    - exec:ffmpeg -f v4l2 -i /dev/video0 -c:v libx264 -preset ultrafast -tune zerolatency -f rtsp {output}
+    - exec:ffmpeg -f alsa -i hw:1,0 -c:a opus -f rtsp {output}
