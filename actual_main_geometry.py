@@ -11,7 +11,7 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy
 import paho.mqtt.client as mqtt
 from time import sleep
 
-# アップロードされたファイルをインポート
+# Robot2WD クラスをインポート
 from robot_2wd_new import Robot2WD
 
 class MainGeometryNode(Node):
@@ -20,18 +20,29 @@ class MainGeometryNode(Node):
         
         # --- 設定 ---
         self.max_rpm = 1500  # 最高速度
+        self.target_x = 0.0
+        self.target_y = 0.0
         self.watchdog_count = 0
         self.WATCHDOG_MAX = 10 # 0.5秒間信号が途絶えたら停止
         self.slowdown_factor = 1.0 # LiDARによる減速係数
 
-        # --- KeiganMotor初期化 (Robot2WDを使用) ---
-        # 引数にはお使いの環境のデバイスパスを指定してください
+        # --- KeiganMotor初期化 (by-id パスを使用) ---
+        # 動作実績のある固有IDパスを指定することで、入れ替わりや競合を防ぎます
+        L_PORT = "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_B0001KJH-if00-port0"
+        R_PORT = "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_B003725S-if00-port0"
+
         try:
-            self.robot = Robot2WD(port_left='/dev/ttyUSB1', port_right='/dev/ttyUSB0')
+            print(f">>> Connecting to Left: {L_PORT}")
+            print(f">>> Connecting to Right: {R_PORT}")
+            self.robot = Robot2WD(port_left=L_PORT, port_right=R_PORT)
+            
+            # 確実に有効化するために少し待機
+            sleep(0.5)
             self.robot.enable()
-            print(">>> KeiganMotor: Connected and Enabled.")
+            print(">>> KeiganMotor: Connected and Enabled using by-id paths.")
         except Exception as e:
-            print(f">>> KeiganMotor Error: {e}")
+            print(f">>> KeiganMotor Connection Error: {e}")
+            print("Hint: Check if the USB cables are connected and you have permissions.")
             sys.exit(1)
 
         # --- MQTT受信設定 ---
@@ -49,11 +60,10 @@ class MainGeometryNode(Node):
         qos = QoSProfile(reliability=ReliabilityPolicy.BEST_EFFORT, depth=10)
         self.subscription = self.create_subscription(LaserScan, '/scan', self.lidar_callback, qos)
         
-        # 安全用ウォッチドッグ兼制御ループ (20Hz)
+        # 制御ループ (20Hz)
         self.create_timer(0.05, self.control_loop)
 
     def on_mqtt_message(self, client, userdata, msg):
-        """受信した座標(x, y)を保存し、ウォッチドッグをリセット"""
         try:
             payload = json.loads(msg.payload.decode())
             self.target_x = payload.get("x", 0.0)
@@ -63,57 +73,54 @@ class MainGeometryNode(Node):
             print(f"MQTT Parse Error: {e}")
 
     def lidar_callback(self, msg):
-        """LiDARによる障害物検知と速度制限"""
         # 前方2m以内の最小距離を取得
         valid_ranges = [r for r in msg.ranges if 0.05 < r < 2.0]
         min_dist = min(valid_ranges) if valid_ranges else 2.0
         
         if min_dist < 0.3:
-            self.slowdown_factor = 0.0 # 緊急停止
+            self.slowdown_factor = 0.0
         elif min_dist < 0.6:
-            self.slowdown_factor = 0.3 # 徐行
+            self.slowdown_factor = 0.3
         elif min_dist < 1.0:
-            self.slowdown_factor = 0.6 # 減速
+            self.slowdown_factor = 0.6
         else:
-            self.slowdown_factor = 1.0 # 通常
+            self.slowdown_factor = 1.0
 
     def control_loop(self):
-        """実際のモーター回転数を計算して送信"""
         # 通信途絶時の安全停止
         if self.watchdog_count > self.WATCHDOG_MAX:
             self.robot.run_stop()
             self.watchdog_count += 1
             return
 
-        # ジオメトリ計算 (差動二輪モデル)
-        # v: 直進速度, w: 旋回速度
+        # 差動二輪モデルの回転数計算
         v = self.target_y * self.max_rpm * self.slowdown_factor
-        w = self.target_x * (self.max_rpm * 0.5) # 旋回の鋭さを0.5で調整
+        w = self.target_x * (self.max_rpm * 0.5)
         
         left_rpm = v - w
         right_rpm = v + w
 
-        # デッドゾーン(遊び)判定：微小な入力は無視
+        # デッドゾーン判定
         if abs(v) < 50 and abs(w) < 50:
             self.robot.run_stop()
         else:
-            # robot_2wd_new.py の run メソッドを呼び出し
+            # 実際のモーター命令
             self.robot.run(left_rpm, right_rpm)
 
         self.watchdog_count += 1
 
     def quit_app(self):
         print("Stopping robot and exiting...")
-        self.robot.run_stop()
-        self.robot.disable()
+        try:
+            self.robot.run_stop()
+            self.robot.disable()
+        except:
+            pass
         rclpy.shutdown()
 
 if __name__ == "__main__":
     rclpy.init()
     node = MainGeometryNode()
-    # 初期値
-    node.target_x = 0.0
-    node.target_y = 0.0
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
