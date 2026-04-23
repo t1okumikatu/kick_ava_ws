@@ -1,4 +1,7 @@
 #!/bin/bash
-cd /home/keime/デスクトップ/avatar_formula_kgn-main/RTCのみ/
+# 1. 現在のディレクトリに移動するように変更
+cd "$(dirname "$0")"
+
+# 2. 実行権限を付与して起動
+chmod +x ./go2rtc_linux_amd64
 ./go2rtc_linux_amd64
-http://100.101.141.2:1984
