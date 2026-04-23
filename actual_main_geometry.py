@@ -27,7 +27,7 @@ class MainGeometryNode(Node):
         # --- KeiganMotor初期化 (Robot2WDを使用) ---
         # 引数にはお使いの環境のデバイスパスを指定してください
         try:
-            self.robot = Robot2WD(port_left='/dev/ttyUSB0', port_right='/dev/ttyUSB1')
+            self.robot = Robot2WD(port_left='/dev/ttyUSB1', port_right='/dev/ttyUSB0')
             self.robot.enable()
             print(">>> KeiganMotor: Connected and Enabled.")
         except Exception as e:
