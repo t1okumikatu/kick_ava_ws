@@ -49,7 +49,7 @@ class MainGeometryNode(Node):
         self.mqtt_client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
         self.mqtt_client.on_message = self.on_mqtt_message
         try:
-            self.mqtt_client.connect("localhost", 1883, 60)
+            self.mqtt_client.connect("100.124.195.2", 1883, 60)
             self.mqtt_client.subscribe("robot/joystick", qos=0)
             threading.Thread(target=self.mqtt_client.loop_forever, daemon=True).start()
             print(">>> MQTT Joystick Receiver: Online (Port 1883)")
