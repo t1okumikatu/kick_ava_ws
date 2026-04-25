@@ -1,5 +1,5 @@
 streams:
-  robot_cam:
+  kick_robot_cam:
     - exec:ffmpeg -f v4l2 -input_format mjpeg -video_size 1280x720 -framerate 30 -i /dev/video0 -c:v libx264 -preset ultrafast -tune zerolatency -f rtsp {output}
 
 webrtc:
