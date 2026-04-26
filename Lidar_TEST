@@ -1,0 +1,59 @@
+LiDARの動作確認方法をいくつか紹介します。
+
+## 1. トピックが来ているか確認（一番簡単）
+
+```bash
+ros2 topic list | grep scan
+```
+
+```bash
+ros2 topic echo /scan --once
+```
+
+## 2. データの受信頻度を確認
+
+```bash
+ros2 topic hz /scan
+```
+正常なら **10〜15Hz** 程度が表示されます。
+
+## 3. 簡単なテストスクリプトで確認
+
+```python
+# lidar_test.py
+import rclpy
+from rclpy.node import Node
+from sensor_msgs.msg import LaserScan
+from rclpy.qos import QoSProfile, ReliabilityPolicy
+
+class LidarTest(Node):
+    def __init__(self):
+        super().__init__('lidar_test')
+        qos = QoSProfile(reliability=ReliabilityPolicy.BEST_EFFORT, depth=10)
+        self.create_subscription(LaserScan, '/scan', self.callback, qos)
+        print("LiDAR待機中...")
+
+    def callback(self, msg):
+        valid = [r for r in msg.ranges if 0.05 < r < 10.0]
+        min_dist = min(valid) if valid else None
+        print(f"✅ LiDAR受信OK | 点群数: {len(msg.ranges)} | 最小距離: {min_dist:.2f}m")
+
+rclpy.init()
+node = LidarTest()
+rclpy.spin(node)
+```
+
+```bash
+python3 lidar_test.py
+```
+
+## 確認ポイント
+
+| 状態 | 原因 |
+|------|------|
+| `/scan`トピックが存在しない | LiDARドライバーが起動していない |
+| データは来るが全て`inf` | センサー異常・接続不良 |
+| Hz が極端に低い | USB/通信の問題 |
+| 正常にデータが出る | ✅ 問題なし |
+
+まず `ros2 topic list` から試してみてください。
