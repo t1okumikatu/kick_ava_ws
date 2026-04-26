@@ -19,7 +19,7 @@ class MainGeometryNode(Node):
         super().__init__('main_geometry_node')
         
         # --- 設定 ---
-        self.max_rpm = 1500  # 最高速度
+        self.max_rpm = 100  # 最高速度
         self.target_x = 0.0
         self.target_y = 0.0
         self.watchdog_count = 0
