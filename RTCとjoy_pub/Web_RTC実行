@@ -1,3 +1,4 @@
 ./go2rtc_linux_amd64
 keime_pcのカメラ起動する
 操作側のPCでgo2RTC   http://100.101.141.2:1984/   起動さす
+v4l2-ctl --device=/dev/video0 --list-formats-ext
