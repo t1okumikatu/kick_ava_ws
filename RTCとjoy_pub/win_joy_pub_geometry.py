@@ -4,7 +4,8 @@ import json
 import time
 
 # --- 設定 ---
-WSL_IP = "192.168.11.26" 
+WSL_IP="192.168.1.131"
+#WSL_IP = "192.168.11.26" 
 MQTT_PORT = 1883  # VSCodeポート転送に合わせて1884
 MQTT_TOPIC = "robot/joystick"
 
